@@ -10,44 +10,44 @@ const User = require('../models/user');
 exports.getPosts = async (req, res, next) => {
     const currentPage = req.query.page || 1;
     const perPage = 2;
-  
+
     try {
-      const data = await Post.findAndCountAll({
-        limit: perPage,
-        offset: (currentPage - 1) * perPage,
-        order: [['updatedAt', 'DESC']]
-      });
-  
-      const { count: totalItems, rows: posts } = data;
-    //   console.log(posts)
-  
-      const postsWithUserData = posts.map(async (post) => {
-        const user = await User.findByPk(post.userId, { attributes: ['name'] });
-        return {
-          ...post.dataValues,
-          name: user.name,
-        };
-      });
-  
-      // Wait for all user data to be fetched
-      const postsWithUserDataResolved = await Promise.all(postsWithUserData);
-      console.log(postsWithUserData)
-  
-      res.status(200).json({
-        message: 'Fetched posts successfully.',
-        posts: postsWithUserDataResolved,
-        totalItems: totalItems
-      });
+        const data = await Post.findAndCountAll({
+            limit: perPage,
+            offset: (currentPage - 1) * perPage,
+            order: [['updatedAt', 'DESC']]
+        });
+
+        const { count: totalItems, rows: posts } = data;
+        //   console.log(posts)
+
+        const postsWithUserData = posts.map(async (post) => {
+            const user = await User.findByPk(post.userId, { attributes: ['name'] });
+            return {
+                ...post.dataValues,
+                name: user.name,
+            };
+        });
+
+        // Wait for all user data to be fetched
+        const postsWithUserDataResolved = await Promise.all(postsWithUserData);
+        console.log(postsWithUserData)
+
+        res.status(200).json({
+            message: 'Fetched posts successfully.',
+            posts: postsWithUserDataResolved,
+            totalItems: totalItems
+        });
     } catch (err) {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
+        next(err);
     }
-  };
-  
-  
-  
+};
+
+
+
 
 
 exports.createPost = async (req, res, next) => {
@@ -75,14 +75,10 @@ exports.createPost = async (req, res, next) => {
         userId: req.userId,
     })
     try {
-        // const result = await post.save()
-        // console.log(result);
         const user = await User.findByPk(req.userId);
 
         creator = user;
-        // console.log(user);
-        // user.posts.push(post)
-        // const saveUser = await user.save()
+
         io.getIO().emit('posts', { action: 'create', post: { ...post._doc, creator: { id: req.userId, name: user.name } } })
         // console.log(creator);
         res.status(201).json({
@@ -107,7 +103,7 @@ exports.getPost = async (req, res, next) => {
             error.statusCode = 404;
             throw error
         }
-        console.log(post);
+        // console.log(post);
         res.status(200).json({ message: 'Post fetched', post: post })
     } catch (err) {
         if (!err.statusCode) {
@@ -194,11 +190,8 @@ exports.deletePost = async (req, res, next) => {
         //check logged in user
         clearImage(post.imageUrl);
         await post.destroy();
-        // console.log(result);
-        // const user = await User.findById(req.userId);
-        // user.posts.pull(postId);
-        // const afterDelete = await user.save();
-        io.getIO().emit('posts', {action : 'delete', post: postId})
+
+        io.getIO().emit('posts', { action: 'delete', post: postId })
         res.status(200).json({
             message: 'Deleting the post Successful',
         })
